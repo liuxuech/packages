@@ -83,11 +83,11 @@ func (bs *boltStore) Delete(key string, opts ...store.DeleteOption) error {
 }
 
 func (bs boltStore) List(opts ...store.ListOption) ([]string, error) {
-	panic("implement me")
+	return nil, nil
 }
 
 func (bs *boltStore) Close() error {
-	panic("implement me")
+	return bs.db.Close()
 }
 
 // 设置数据文件存放的位置
