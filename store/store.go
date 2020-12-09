@@ -1,7 +1,5 @@
 package store
 
-import "github.com/liuxuech/packages/store/bolt"
-
 type Store interface {
 	Read(key string, opts ...ReadOption) (*Record, error)
 	Write(r *Record, opts ...WriteOption) error
