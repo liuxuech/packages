@@ -34,7 +34,7 @@ func Close() error {
 }
 
 func InitStore(dbFile string) (err error) {
-	if defaultStore, err = bolt.NewStore(WithDatabase(dbFile)); err != nil {
+	if defaultStore, err = NewStore(WithDatabase(dbFile)); err != nil {
 		return err
 	}
 	return nil

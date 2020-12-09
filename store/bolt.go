@@ -1,9 +1,8 @@
-package bolt
+package store
 
 import (
 	"context"
 	"encoding/json"
-	"github.com/liuxuech/packages/store"
 	bolt "go.etcd.io/bbolt"
 	"os"
 	"path/filepath"
@@ -21,15 +20,15 @@ type boltStore struct {
 	db *bolt.DB
 }
 
-func (bs *boltStore) Read(key string, opts ...store.ReadOption) (*store.Record, error) {
-	readOpts := store.ReadOptions{Table: DefaultTable}
+func (bs *boltStore) Read(key string, opts ...ReadOption) (*Record, error) {
+	readOpts := ReadOptions{Table: DefaultTable}
 	for _, o := range opts {
 		o(&readOpts)
 	}
 
 	var (
 		value  []byte
-		record store.Record
+		record Record
 	)
 
 	err := bs.db.View(func(tx *bolt.Tx) error {
@@ -45,8 +44,8 @@ func (bs *boltStore) Read(key string, opts ...store.ReadOption) (*store.Record, 
 	return &record, err
 }
 
-func (bs *boltStore) Write(r *store.Record, opts ...store.WriteOption) error {
-	writeOpts := store.WriteOptions{Table: DefaultTable}
+func (bs *boltStore) Write(r *Record, opts ...WriteOption) error {
+	writeOpts := WriteOptions{Table: DefaultTable}
 	for _, o := range opts {
 		o(&writeOpts)
 	}
@@ -67,8 +66,8 @@ func (bs *boltStore) Write(r *store.Record, opts ...store.WriteOption) error {
 	})
 }
 
-func (bs *boltStore) Delete(key string, opts ...store.DeleteOption) error {
-	deleteOpts := store.DeleteOptions{Table: DefaultTable}
+func (bs *boltStore) Delete(key string, opts ...DeleteOption) error {
+	deleteOpts := DeleteOptions{Table: DefaultTable}
 	for _, o := range opts {
 		o(&deleteOpts)
 	}
@@ -82,7 +81,7 @@ func (bs *boltStore) Delete(key string, opts ...store.DeleteOption) error {
 	})
 }
 
-func (bs boltStore) List(opts ...store.ListOption) ([]string, error) {
+func (bs boltStore) List(opts ...ListOption) ([]string, error) {
 	return nil, nil
 }
 
@@ -91,14 +90,14 @@ func (bs *boltStore) Close() error {
 }
 
 // 设置数据文件存放的位置
-func WithDir(dir string) store.Option {
-	return func(opts *store.Options) {
+func WithDir(dir string) Option {
+	return func(opts *Options) {
 		opts.Context = context.WithValue(opts.Context, dirKey{}, dir)
 	}
 }
 
-func NewStore(opts ...store.Option) (store.Store, error) {
-	options := store.Options{
+func NewStore(opts ...Option) (Store, error) {
+	options := Options{
 		Database: DefaultDatabase,
 		Table:    DefaultTable,
 	}
