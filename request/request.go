@@ -72,7 +72,7 @@ func (r *Request) Post(path string, body io.Reader) (resp *http.Response, err er
 	return r.defaultClient.Do(req)
 }
 
-func NewRequest(opts ...Option) *Request {
+func New(opts ...Option) *Request {
 	var request Request
 
 	// 设置基础地址
