@@ -10,8 +10,9 @@ type Sms interface {
 }
 
 type SingleMsg struct {
+	RegionId string
 	// 签名，ep：普诺思博
-	Sign string ``
+	Sign string
 	// 被推送短信的手机号
 	TargetPhone string
 	// 短信模板码
@@ -21,6 +22,7 @@ type SingleMsg struct {
 }
 
 type BatchMsg struct {
+	RegionId       string
 	Sign           string   // 签名
 	TargetPhones   []string // 目标手机号切片
 	TemplateCode   string   // 短信模板码
