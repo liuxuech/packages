@@ -1,10 +1,10 @@
-package sms
+package ali
 
 import (
 	"fmt"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dysmsapi"
 	"github.com/go-playground/validator/v10"
-	"github.com/liuxuech/packages/base"
+	"github.com/liuxuech/packages/sms"
 )
 
 type aliSms struct {
@@ -13,7 +13,7 @@ type aliSms struct {
 	valid  *validator.Validate
 }
 
-func (as *aliSms) Send(opts *SingleMsg) error {
+func (as *aliSms) Send(opts *sms.SingleMsg) error {
 	request := dysmsapi.CreateSendSmsRequest()
 	request.Scheme = "https"
 
@@ -40,24 +40,15 @@ func (as *aliSms) SendBatch() {
 	panic("implement me")
 }
 
-func (as *aliSms) validate(params interface{}) error {
-	return as.valid.Struct(params)
-}
-
-func (as *aliSms) PhoneCheck(fl validator.FieldLevel) bool {
-	phone := fl.Field().String()
-	return base.PhoneCheck(phone)
-}
-
 func (as *aliSms) init(opts *Options) error {
 	// 验证器
-	as.valid = validator.New()
-	// 注册自定义验证规则
-	if err := as.valid.RegisterValidation("PhoneCheck", as.PhoneCheck); err != nil {
-		return err
+	valid, err := NewValidate()
+	if err != nil {
+		return nil
 	}
+	as.valid = valid
 
-	if err := as.validate(opts); err != nil {
+	if err := as.valid.Struct(opts); err != nil {
 		return err
 	}
 
@@ -72,43 +63,17 @@ func (as *aliSms) init(opts *Options) error {
 	return nil
 }
 
-type Options struct {
-	RegionId     string `validate:"required=true"`
-	AccessKeyId  string `validate:"required=true"`
-	AccessSecret string `validate:"required=true"`
-}
-
-type Option func(*Options)
-
-func WithRegionId(regionId string) Option {
-	return func(options *Options) {
-		options.RegionId = regionId
-	}
-}
-
-func WithAccessKeyId(accessKeyId string) Option {
-	return func(options *Options) {
-		options.AccessKeyId = accessKeyId
-	}
-}
-
-func WithAccessSecret(accessSecret string) Option {
-	return func(options *Options) {
-		options.AccessSecret = accessSecret
-	}
-}
-
-func NewSms(opts ...Option) (Sms, error) {
+func NewSms(opts ...Option) (sms.Sms, error) {
 	var (
 		options Options
-		sms     aliSms
+		as      aliSms
 	)
 	for _, o := range opts {
 		o(&options)
 	}
-	if err := sms.init(&options); err != nil {
+	if err := as.init(&options); err != nil {
 		return nil, err
 	}
 
-	return &sms, nil
+	return &as, nil
 }
