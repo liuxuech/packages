@@ -71,6 +71,9 @@ func NewSms(opts ...Option) (sms.Sms, error) {
 	for _, o := range opts {
 		o(&options)
 	}
+
+	as.opts = &options
+
 	if err := as.init(&options); err != nil {
 		return nil, err
 	}

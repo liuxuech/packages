@@ -1,9 +1,5 @@
 package sms
 
-// 定义包的行为
-
-// 定义配置项
-
 type Sms interface {
 	Send(opts *SingleMsg) error // 单条短信发送
 	SendBatch()                 // 批量发送
