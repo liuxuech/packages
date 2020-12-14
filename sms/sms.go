@@ -1,10 +1,10 @@
 package sms
 
 type Sms interface {
-	Send(opts *MessageOptions) error
+	Send(opts *Options) error
 }
 
-type MessageOptions struct {
+type Options struct {
 	Phones     string `validate:"required=true"` // 被推送短信的手机号，格式：15612345678,1341234567
 	TemplateID string `validate:"required=true"` // 短信模板ID
 

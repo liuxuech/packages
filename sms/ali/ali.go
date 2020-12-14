@@ -15,10 +15,7 @@ type aliSms struct {
 	valid  *validator.Validate // 参数验证器
 }
 
-func (as *aliSms) Send(opts *sms.MessageOptions) error {
-	request := dysmsapi.CreateSendSmsRequest()
-	request.Scheme = "https"
-
+func (as *aliSms) Send(opts *sms.Options) error {
 	// 通用验证
 	if err := as.valid.Struct(opts); err != nil {
 		return errors.Wrap(err, "通用参数验证失败")
@@ -32,16 +29,14 @@ func (as *aliSms) Send(opts *sms.MessageOptions) error {
 	// 根据手机号的多少判断是单发，但是群发
 	phones := strings.Split(opts.Phones, ",")
 	if len(phones) > 1 {
-		// 群发
-		return as.SendBatchSms(opts)
+		return as.SendBatchSms(opts) // 群发
 	} else {
-		// 单发
-		return as.SendSms(opts)
+		return as.SendSms(opts) // 单发
 	}
 }
 
 // 单个手机号发送短信
-func (as *aliSms) SendSms(opts *sms.MessageOptions) error {
+func (as *aliSms) SendSms(opts *sms.Options) error {
 	request := dysmsapi.CreateSendSmsRequest()
 	request.Scheme = "https"
 
@@ -64,7 +59,7 @@ func (as *aliSms) SendSms(opts *sms.MessageOptions) error {
 	return nil
 }
 
-func (as *aliSms) SendBatchSms(opts *sms.MessageOptions) error {
+func (as *aliSms) SendBatchSms(opts *sms.Options) error {
 	request := dysmsapi.CreateSendBatchSmsRequest()
 	request.Scheme = "https"
 
