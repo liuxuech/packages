@@ -6,9 +6,9 @@ import (
 )
 
 type Options struct {
-	RegionId     string `validate:"required=true"`
 	AccessKeyId  string `validate:"required=true"`
 	AccessSecret string `validate:"required=true"`
+	RegionId     string `validate:"required=true"`
 }
 
 type Option func(*Options)

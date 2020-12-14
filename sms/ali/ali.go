@@ -5,26 +5,32 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dysmsapi"
 	"github.com/go-playground/validator/v10"
 	"github.com/liuxuech/packages/sms"
+	"github.com/pkg/errors"
 )
 
 type aliSms struct {
-	opts   *Options
-	client *dysmsapi.Client
-	valid  *validator.Validate
+	opts   *Options            // 配置
+	client *dysmsapi.Client    // 短信推送客户端
+	valid  *validator.Validate // 参数验证器
 }
 
-func (as *aliSms) Send(opts *sms.SingleMsg) error {
+func (as *aliSms) Send(opts *sms.MessageOption) error {
 	request := dysmsapi.CreateSendSmsRequest()
 	request.Scheme = "https"
 
-	request.PhoneNumbers = opts.TargetPhone
+	// 验证签名，阿里云短信推送必须传入签名
+	if err := as.valid.Var(opts.Sign, "required=true"); err != nil {
+		return errors.Wrap(err, "签名验证失败")
+	}
+
 	request.SignName = opts.Sign
-	request.TemplateCode = opts.TemplateCode
+	request.PhoneNumbers = opts.Phones
+	request.TemplateCode = opts.TemplateID
 	request.TemplateParam = opts.TemplateParam
 
 	response, err := as.client.SendSms(request)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "短信推送失败")
 	}
 
 	fmt.Println("短信发送结果: ")
@@ -34,10 +40,6 @@ func (as *aliSms) Send(opts *sms.SingleMsg) error {
 	fmt.Printf("RequestId - %#v\n", response.RequestId)
 
 	return nil
-}
-
-func (as *aliSms) SendBatch() {
-	panic("implement me")
 }
 
 func (as *aliSms) init(opts *Options) error {

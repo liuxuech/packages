@@ -1,26 +1,14 @@
 package sms
 
 type Sms interface {
-	Send(opts *SingleMsg) error // 单条短信发送
-	SendBatch()                 // 批量发送
+	Send(opts *MessageOption) error // 单条短信发送
+	SendBatch()                     // 批量发送
 }
 
-type SingleMsg struct {
-	RegionId string
-	// 签名，ep：普诺思博
-	Sign string
-	// 被推送短信的手机号
-	TargetPhone string
-	// 短信模板码
-	TemplateCode string
-	// 模板参数
-	TemplateParam string
-}
+type MessageOption struct {
+	Phones     string `validate:"required=true"` // 被推送短信的手机号，单个推送和批量推送都可以
+	TemplateID string `validate:"required=true"` // 短信模板码
 
-type BatchMsg struct {
-	RegionId       string
-	Sign           string   // 签名
-	TargetPhones   []string // 目标手机号切片
-	TemplateCode   string   // 短信模板码
-	TemplateParams []string // 模板参数切片
+	Sign          string // 签名
+	TemplateParam string // 模板参数
 }
