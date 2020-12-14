@@ -1,11 +1,13 @@
 package ali
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dysmsapi"
 	"github.com/go-playground/validator/v10"
 	"github.com/liuxuech/packages/sms"
 	"github.com/pkg/errors"
+	"strings"
 )
 
 type aliSms struct {
@@ -14,7 +16,7 @@ type aliSms struct {
 	valid  *validator.Validate // 参数验证器
 }
 
-func (as *aliSms) Send(opts *sms.MessageOption) error {
+func (as *aliSms) Send(opts *sms.MessageOptions) error {
 	request := dysmsapi.CreateSendSmsRequest()
 	request.Scheme = "https"
 
@@ -28,6 +30,22 @@ func (as *aliSms) Send(opts *sms.MessageOption) error {
 		return errors.Wrap(err, "签名验证失败")
 	}
 
+	// 根据手机号的多少判断是单发，但是群发
+	phones := strings.Split(opts.Phones, ",")
+	if len(phones) > 1 {
+		// 群发
+		return as.SendBatchSms(opts)
+	} else {
+		// 单发
+		return as.SendSms(opts)
+	}
+}
+
+// 单个手机号发送短信
+func (as *aliSms) SendSms(opts *sms.MessageOptions) error {
+	request := dysmsapi.CreateSendSmsRequest()
+	request.Scheme = "https"
+
 	request.SignName = opts.Sign
 	request.PhoneNumbers = opts.Phones
 	request.TemplateCode = opts.TemplateID
@@ -35,10 +53,45 @@ func (as *aliSms) Send(opts *sms.MessageOption) error {
 
 	response, err := as.client.SendSms(request)
 	if err != nil {
-		return errors.Wrap(err, "短信推送失败")
+		return errors.Wrap(err, "短信单发推送失败")
 	}
 
-	fmt.Println("短信发送结果: ")
+	fmt.Println("短信单发结果: ")
+	fmt.Printf("BizId - %#v\n", response.BizId)
+	fmt.Printf("Code - %#v\n", response.Code)
+	fmt.Printf("Message - %#v\n", response.Message)
+	fmt.Printf("RequestId - %#v\n", response.RequestId)
+
+	return nil
+}
+
+func (as *aliSms) SendBatchSms(opts *sms.MessageOptions) error {
+	request := dysmsapi.CreateSendBatchSmsRequest()
+	request.Scheme = "https"
+
+	phones := strings.Split(opts.Phones, ",")
+	phoneData, err := json.Marshal(phones)
+	if err != nil {
+		return errors.Wrap(err, "Phones json编码失败")
+	}
+
+	signs := strings.Split(opts.Sign, ",")
+	signData, err := json.Marshal(signs)
+	if err != nil {
+		return errors.Wrap(err, "Sign json编码失败")
+	}
+
+	request.PhoneNumberJson = string(phoneData)
+	request.SignNameJson = string(signData)
+	request.TemplateCode = opts.TemplateID
+	request.TemplateParamJson = opts.TemplateParam // ep："[{\"code\":\"666666\"}]" 是一个json的对象数组
+
+	response, err := as.client.SendBatchSms(request)
+	if err != nil {
+		return errors.Wrap(err, "短信群发推送失败")
+	}
+
+	fmt.Println("短信群发结果: ")
 	fmt.Printf("BizId - %#v\n", response.BizId)
 	fmt.Printf("Code - %#v\n", response.Code)
 	fmt.Printf("Message - %#v\n", response.Message)
