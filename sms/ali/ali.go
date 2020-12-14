@@ -1,7 +1,6 @@
 package ali
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dysmsapi"
 	"github.com/go-playground/validator/v10"
@@ -69,20 +68,25 @@ func (as *aliSms) SendBatchSms(opts *sms.MessageOptions) error {
 	request := dysmsapi.CreateSendBatchSmsRequest()
 	request.Scheme = "https"
 
+	var phoneBuilder strings.Builder
+	phoneBuilder.WriteString("[")
 	phones := strings.Split(opts.Phones, ",")
-	phoneData, err := json.Marshal(phones)
-	if err != nil {
-		return errors.Wrap(err, "Phones json编码失败")
+	for _, v := range phones {
+		phoneBuilder.WriteString(v)
 	}
+	phoneBuilder.WriteString("]")
 
+	var signBuilder strings.Builder
+	signBuilder.WriteString("[")
 	signs := strings.Split(opts.Sign, ",")
-	signData, err := json.Marshal(signs)
-	if err != nil {
-		return errors.Wrap(err, "Sign json编码失败")
+	for _, v := range signs {
+		signBuilder.WriteString(v)
 	}
+	signBuilder.WriteString("]")
 
-	request.PhoneNumberJson = string(phoneData)
-	request.SignNameJson = string(signData)
+	request.PhoneNumberJson = phoneBuilder.String()
+	request.SignNameJson = signBuilder.String()
+
 	request.TemplateCode = opts.TemplateID
 	request.TemplateParamJson = opts.TemplateParam // ep："[{\"code\":\"666666\"}]" 是一个json的对象数组
 
@@ -93,6 +97,8 @@ func (as *aliSms) SendBatchSms(opts *sms.MessageOptions) error {
 
 	fmt.Println("短信群发结果: ")
 	fmt.Printf("BizId - %#v\n", response.BizId)
+	// 根据code是否为ok判断是否发送成功
+	// 其他值可以在地址 https://help.aliyun.com/document_detail/101346.html?spm=a2c4g.11186623.2.14.8042128eDUcH7U 找到原因。
 	fmt.Printf("Code - %#v\n", response.Code)
 	fmt.Printf("Message - %#v\n", response.Message)
 	fmt.Printf("RequestId - %#v\n", response.RequestId)
