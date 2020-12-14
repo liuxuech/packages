@@ -82,12 +82,12 @@ func NewSms(opts ...Option) (sms.Sms, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := ali.valid.Struct(options); err != nil {
+	if err := valid.Struct(options); err != nil {
 		return nil, err
 	}
 
 	// 短信推送客户端
-	client, err := dysmsapi.NewClientWithAccessKey(ali.opts.RegionId, ali.opts.AccessKeyId, ali.opts.AccessSecret)
+	client, err := dysmsapi.NewClientWithAccessKey(options.RegionId, options.AccessKeyId, options.AccessSecret)
 	if err != nil {
 		return nil, err
 	}
