@@ -82,7 +82,7 @@ func NewSms(opts ...Option) (sms.Sms, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := ali.valid.Struct(opts); err != nil {
+	if err := ali.valid.Struct(options); err != nil {
 		return nil, err
 	}
 
