@@ -47,19 +47,6 @@ func (as *aliSms) Send(opts *sms.MessageOption) error {
 	return nil
 }
 
-func (as *aliSms) init(opts *Options) (err error) {
-
-	// 短信推送客户端
-	smsClient, err := dysmsapi.NewClientWithAccessKey(as.opts.RegionId, as.opts.AccessKeyId, as.opts.AccessSecret)
-	if err != nil {
-		return err
-	}
-
-	as.client = smsClient
-
-	return nil
-}
-
 // 创建验证对象
 func NewValidate() (*validator.Validate, error) {
 	valid := validator.New()
@@ -67,15 +54,15 @@ func NewValidate() (*validator.Validate, error) {
 	return valid, nil
 }
 
+// 注意：这里在创建aliSms的时候，采用就近赋值原则，即：创建一个字段，赋值一个字段。
 func NewSms(opts ...Option) (sms.Sms, error) {
-	var (
-		ali     aliSms
-		options Options
-	)
+	var ali aliSms
 
+	var options Options
 	for _, o := range opts {
 		o(&options)
 	}
+	ali.opts = &options
 
 	// 验证器
 	valid, err := NewValidate()
@@ -85,15 +72,13 @@ func NewSms(opts ...Option) (sms.Sms, error) {
 	if err := valid.Struct(options); err != nil {
 		return nil, err
 	}
+	ali.valid = valid
 
 	// 短信推送客户端
-	client, err := dysmsapi.NewClientWithAccessKey(options.RegionId, options.AccessKeyId, options.AccessSecret)
+	client, err := dysmsapi.NewClientWithAccessKey(ali.opts.RegionId, ali.opts.AccessKeyId, ali.opts.AccessSecret)
 	if err != nil {
 		return nil, err
 	}
-
-	ali.opts = &options
-	ali.valid = valid
 	ali.client = client
 
 	return &ali, nil
