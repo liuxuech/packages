@@ -1,5 +1,13 @@
 package store
 
+import (
+	"errors"
+)
+
+var (
+	ErrNotFound = errors.New("not found")
+)
+
 type Store interface {
 	Read(key string, opts ...ReadOption) (*Record, error)
 	Write(r *Record, opts ...WriteOption) error
@@ -31,8 +39,8 @@ func Close() error {
 	return defaultStore.Close()
 }
 
-func InitStore(dbFile string) (err error) {
-	if defaultStore, err = NewStore(WithDatabase(dbFile)); err != nil {
+func InitStore(dbPath, dbFile string) (err error) {
+	if defaultStore, err = NewStore(WithDBPath(dbPath), WithDBFile(dbFile)); err != nil {
 		return err
 	}
 	return nil

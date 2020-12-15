@@ -1,52 +1,56 @@
 package store
 
-import "context"
-
 type Options struct {
-	Database string
-	Table    string
-	Context  context.Context
+	DBPath string // 数据文件存放的位置
+	DBFile string // 数据文件
+	Bucket string // 默认值的bucket
 }
 
-func WithDatabase(database string) Option {
+func WithDBPath(dbPath string) Option {
 	return func(opts *Options) {
-		opts.Database = database
+		opts.DBPath = dbPath
 	}
 }
 
-func WithTable(table string) Option {
+func WithDBFile(dbFile string) Option {
 	return func(opts *Options) {
-		opts.Table = table
+		opts.DBFile = dbFile
+	}
+}
+
+func WithBucket(bucket string) Option {
+	return func(opts *Options) {
+		opts.Bucket = bucket
 	}
 }
 
 type ReadOptions struct {
-	Table string
+	Bucket string
 }
 
-func ReadFrom(table string) ReadOption {
+func ReadFrom(bucket string) ReadOption {
 	return func(opts *ReadOptions) {
-		opts.Table = table
+		opts.Bucket = bucket
 	}
 }
 
 type WriteOptions struct {
-	Table string
+	Bucket string
 }
 
-func WriteTo(table string) WriteOption {
+func WriteTo(bucket string) WriteOption {
 	return func(opts *WriteOptions) {
-		opts.Table = table
+		opts.Bucket = bucket
 	}
 }
 
 type DeleteOptions struct {
-	Table string
+	Bucket string
 }
 
-func DeleteFrom(table string) DeleteOption {
+func DeleteFrom(bucket string) DeleteOption {
 	return func(opts *DeleteOptions) {
-		opts.Table = table
+		opts.Bucket = bucket
 	}
 }
 

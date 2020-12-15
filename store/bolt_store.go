@@ -1,7 +1,6 @@
 package store
 
 import (
-	"context"
 	"encoding/json"
 	bolt "go.etcd.io/bbolt"
 	"os"
@@ -9,19 +8,18 @@ import (
 )
 
 const (
-	DefaultPath     = "."
-	DefaultDatabase = "bolt"
-	DefaultTable    = "bolt" // table 对应 bucket
+	DefaultDBPath = "."
+	DefaultDBFile = "bolt.db"
+	DefaultBucket = "bolt"
 )
 
-type dirKey struct{}
-
 type boltStore struct {
-	db *bolt.DB
+	opts *Options
+	db   *bolt.DB
 }
 
 func (bs *boltStore) Read(key string, opts ...ReadOption) (*Record, error) {
-	readOpts := ReadOptions{Table: DefaultTable}
+	readOpts := ReadOptions{Bucket: bs.opts.Bucket}
 	for _, o := range opts {
 		o(&readOpts)
 	}
@@ -32,10 +30,17 @@ func (bs *boltStore) Read(key string, opts ...ReadOption) (*Record, error) {
 	)
 
 	err := bs.db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(readOpts.Table))
+		b := tx.Bucket([]byte(readOpts.Bucket))
+		if b == nil {
+			return nil
+		}
 		value = b.Get([]byte(key))
 		return nil
 	})
+
+	if value == nil {
+		return nil, ErrNotFound
+	}
 
 	if err = json.Unmarshal(value, &record); err != nil {
 		return nil, err
@@ -45,7 +50,7 @@ func (bs *boltStore) Read(key string, opts ...ReadOption) (*Record, error) {
 }
 
 func (bs *boltStore) Write(r *Record, opts ...WriteOption) error {
-	writeOpts := WriteOptions{Table: DefaultTable}
+	writeOpts := WriteOptions{Bucket: bs.opts.Bucket}
 	for _, o := range opts {
 		o(&writeOpts)
 	}
@@ -56,9 +61,9 @@ func (bs *boltStore) Write(r *Record, opts ...WriteOption) error {
 	}
 
 	return bs.db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(writeOpts.Table))
+		b := tx.Bucket([]byte(writeOpts.Bucket))
 		if b == nil {
-			if b, err = tx.CreateBucketIfNotExists([]byte(writeOpts.Table)); err != nil {
+			if b, err = tx.CreateBucketIfNotExists([]byte(writeOpts.Bucket)); err != nil {
 				return err
 			}
 		}
@@ -67,13 +72,13 @@ func (bs *boltStore) Write(r *Record, opts ...WriteOption) error {
 }
 
 func (bs *boltStore) Delete(key string, opts ...DeleteOption) error {
-	deleteOpts := DeleteOptions{Table: DefaultTable}
+	deleteOpts := DeleteOptions{Bucket: bs.opts.Bucket}
 	for _, o := range opts {
 		o(&deleteOpts)
 	}
 
 	return bs.db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(deleteOpts.Table))
+		b := tx.Bucket([]byte(deleteOpts.Bucket))
 		if b == nil {
 			return nil
 		}
@@ -89,38 +94,22 @@ func (bs *boltStore) Close() error {
 	return bs.db.Close()
 }
 
-// 设置数据文件存放的位置
-func WithDir(dir string) Option {
-	return func(opts *Options) {
-		opts.Context = context.WithValue(opts.Context, dirKey{}, dir)
-	}
-}
-
 func NewStore(opts ...Option) (Store, error) {
 	options := Options{
-		Database: DefaultDatabase,
-		Table:    DefaultTable,
+		DBPath: DefaultDBPath,
+		DBFile: DefaultDBFile,
+		Bucket: DefaultBucket,
 	}
-
 	for _, o := range opts {
 		o(&options)
 	}
 
-	var dir string
-	if options.Context != nil {
-		dir, _ = options.Context.Value(dirKey{}).(string)
-	}
-	if len(dir) == 0 {
-		dir = DefaultPath
-	}
-
 	// 创建目录
-	os.MkdirAll(filepath.Join(dir), 0700)
+	os.MkdirAll(options.DBPath, 0700)
 
-	boltDB, err := bolt.Open(filepath.Join(dir, options.Database+".db"), 0700, nil)
+	boltDB, err := bolt.Open(filepath.Join(options.DBPath, options.DBFile), 0700, nil)
 	if err != nil {
 		return nil, err
 	}
-
 	return &boltStore{db: boltDB}, nil
 }
