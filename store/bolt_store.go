@@ -95,6 +95,8 @@ func (bs *boltStore) Close() error {
 }
 
 func NewStore(opts ...Option) (Store, error) {
+	var bs boltStore
+
 	options := Options{
 		DBPath: DefaultDBPath,
 		DBFile: DefaultDBFile,
@@ -103,6 +105,7 @@ func NewStore(opts ...Option) (Store, error) {
 	for _, o := range opts {
 		o(&options)
 	}
+	bs.opts = &options
 
 	// 创建目录
 	os.MkdirAll(options.DBPath, 0700)
@@ -111,5 +114,7 @@ func NewStore(opts ...Option) (Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &boltStore{db: boltDB}, nil
+	bs.db = boltDB
+
+	return &bs, nil
 }
