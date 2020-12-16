@@ -13,14 +13,14 @@ type Voice struct {
 	valid  *validator.Validate
 }
 
-type Msg struct {
+type Params struct {
 	TtsCode          string `validate:"required=true"`
 	TtsParam         string
 	CalledNumber     string `validate:"required=true"`
 	CalledShowNumber string
 }
 
-func (av *Voice) Call(opts *Msg) error {
+func (av *Voice) Call(opts *Params) error {
 	// 通用验证
 	if err := av.valid.Struct(opts); err != nil {
 		return errors.Wrap(err, "通用参数验证失败")
@@ -28,7 +28,7 @@ func (av *Voice) Call(opts *Msg) error {
 	return av.SingleCallByTts(opts)
 }
 
-func (av *Voice) SingleCallByTts(opts *Msg) error {
+func (av *Voice) SingleCallByTts(opts *Params) error {
 	request := dyvmsapi.CreateSingleCallByTtsRequest()
 	request.Scheme = "https"
 

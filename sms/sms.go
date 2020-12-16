@@ -13,14 +13,14 @@ type Sms struct {
 	valid  *validator.Validate // 参数验证器
 }
 
-type Msg struct {
+type Params struct {
 	Phones        string `validate:"required=true"` // 被推送短信的手机号，格式：15612345678,1341234567
 	TemplateID    string `validate:"required=true"` // 短信模板ID
 	Sign          string `validate:"required=true"` // 签名
 	TemplateParam string // 模板参数
 }
 
-func (as *Sms) Send(opts *Msg) error {
+func (as *Sms) Send(opts *Params) error {
 	// 通用验证
 	if err := as.valid.Struct(opts); err != nil {
 		return errors.Wrap(err, "通用参数验证失败")
@@ -41,7 +41,7 @@ func (as *Sms) Send(opts *Msg) error {
 }
 
 // 单个手机号发送短信
-func (as *Sms) SendSms(opts *Msg) error {
+func (as *Sms) SendSms(opts *Params) error {
 	request := dysmsapi.CreateSendSmsRequest()
 	request.Scheme = "https"
 
@@ -64,7 +64,7 @@ func (as *Sms) SendSms(opts *Msg) error {
 	return nil
 }
 
-func (as *Sms) SendBatchSms(opts *Msg) error {
+func (as *Sms) SendBatchSms(opts *Params) error {
 	request := dysmsapi.CreateSendBatchSmsRequest()
 	request.Scheme = "https"
 
