@@ -14,8 +14,8 @@ type nacosACM struct {
 
 	client config_client.IConfigClient
 
-	clientCfg constant.ClientConfig
-	serverCfg constant.ServerConfig
+	clientConfig constant.ClientConfig
+	serverConfig constant.ServerConfig
 
 	validate *validator.Validate
 }
@@ -29,29 +29,34 @@ func (nacos *nacosACM) GetConfig() (string, error) {
 }
 
 func (nacos *nacosACM) Init() error {
-	// namespaceId 没有默认值，但是又是必须的值，所以需要验证
-	if err := nacos.validate.Var(nacos.options.NamespaceId, "required"); err != nil {
-		return errors.Wrap(err, "缺少参数")
+	if nacos.options.NamespaceId == "" {
+		return errors.New("缺少必要参数: NamespaceId")
 	}
 
-	nacos.clientCfg = constant.ClientConfig{
+	nacos.clientConfig = constant.ClientConfig{
 		TimeoutMs:   5 * 1000,
 		NamespaceId: nacos.options.NamespaceId,
 	}
 
-	nacos.serverCfg = constant.ServerConfig{
-		IpAddr: nacos.options.IpAddr,
+	if nacos.options.CacheDir != "" {
+		nacos.clientConfig.CacheDir = nacos.options.CacheDir
+	}
+	if nacos.options.LogDir != "" {
+		nacos.clientConfig.LogDir = nacos.options.LogDir
+	}
+
+	nacos.serverConfig = constant.ServerConfig{
+		IpAddr: nacos.options.Host,
 		Port:   nacos.options.Port,
 	}
 
 	c, err := clients.NewConfigClient(vo.NacosClientParam{
-		ClientConfig:  &nacos.clientCfg,
-		ServerConfigs: []constant.ServerConfig{nacos.serverCfg},
+		ClientConfig:  &nacos.clientConfig,
+		ServerConfigs: []constant.ServerConfig{nacos.serverConfig},
 	})
 	if err != nil {
 		return errors.Wrap(err, "新建配置客户端错误")
 	}
-
 	nacos.client = c
 
 	return nil
@@ -62,9 +67,9 @@ func newACM(opts ...Option) ACM {
 
 	// 设置默认值
 	nacos.validate = validator.New()
-	nacos.options.TimeoutMs = 5 * 1000
-	nacos.options.IpAddr = "127.0.0.1"
+	nacos.options.Host = "127.0.0.1"
 	nacos.options.Port = 8848
+	nacos.options.Others = make(map[string]interface{})
 
 	for _, o := range opts {
 		o(&nacos.options)
