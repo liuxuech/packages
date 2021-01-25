@@ -10,39 +10,30 @@ import (
 )
 
 type nacosACM struct {
-	options Options
+	options  Options
+	validate *validator.Validate
 
-	client config_client.IConfigClient
-
+	client       config_client.IConfigClient
 	clientConfig constant.ClientConfig
 	serverConfig constant.ServerConfig
-
-	validate *validator.Validate
 }
 
-func (nacos *nacosACM) GetConfig() (string, error) {
-	content, err := nacos.client.GetConfig(vo.ConfigParam{
-		DataId: "clear.yaml",
-		Group:  "DEFAULT_GROUP",
-	})
-	return content, err
+func (nacos *nacosACM) Listen(param vo.ConfigParam) error {
+	return nacos.client.ListenConfig(param)
 }
 
-func (nacos *nacosACM) Init() error {
-	if nacos.options.NamespaceId == "" {
-		return errors.New("缺少必要参数: NamespaceId")
-	}
+func (nacos *nacosACM) GetConfig(param vo.ConfigParam) (string, error) {
+	return nacos.client.GetConfig(param)
+}
 
+func (nacos *nacosACM) Validate() error {
+	return nacos.validate.Struct(nacos.options)
+}
+
+func (nacos *nacosACM) configure() error {
 	nacos.clientConfig = constant.ClientConfig{
 		TimeoutMs:   5 * 1000,
-		NamespaceId: nacos.options.NamespaceId,
-	}
-
-	if nacos.options.CacheDir != "" {
-		nacos.clientConfig.CacheDir = nacos.options.CacheDir
-	}
-	if nacos.options.LogDir != "" {
-		nacos.clientConfig.LogDir = nacos.options.LogDir
+		NamespaceId: nacos.options.Namespace,
 	}
 
 	nacos.serverConfig = constant.ServerConfig{
@@ -62,18 +53,21 @@ func (nacos *nacosACM) Init() error {
 	return nil
 }
 
-func newACM(opts ...Option) ACM {
+func newACM(opts Options) (ACM, error) {
 	var nacos nacosACM
 
 	// 设置默认值
 	nacos.validate = validator.New()
-	nacos.options.Host = "127.0.0.1"
-	nacos.options.Port = 8848
-	nacos.options.Others = make(map[string]interface{})
+	nacos.options = opts
 
-	for _, o := range opts {
-		o(&nacos.options)
+	// 参数验证
+	if err := nacos.Validate(); err != nil {
+		return nil, errors.Wrap(err, "参数验证失败")
 	}
 
-	return &nacos
+	if err := nacos.configure(); err != nil {
+		return nil, errors.Wrap(err, "ACM初始化失败")
+	}
+
+	return &nacos, nil
 }

@@ -11,42 +11,44 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	accessKey = "AccessKey"
+	secretKey = "SecretKey"
+)
+
 type aliACM struct {
-	options acm.Options
-
-	client config_client.IConfigClient
-
-	clientConfig constant.ClientConfig
-
+	options  acm.Options
 	validate *validator.Validate
+
+	client       config_client.IConfigClient
+	clientConfig constant.ClientConfig
 }
 
-func (ali *aliACM) Init() error {
-	access, ok := ali.options.Others[accessKey]
-	if !ok || access == "" {
+func (ali *aliACM) Validate() error {
+	if err := ali.validate.Struct(ali.options); err != nil {
+		return err
+	}
+	if access, ok := ali.options.Others[accessKey]; !ok || access == "" {
 		return errors.New("缺少必要参数: accessKey")
 	}
-	secret, ok := ali.options.Others[secretKey]
-	if !ok || secret == "" {
+	if secret, ok := ali.options.Others[secretKey]; !ok || secret == "" {
 		return errors.New("缺少必要参数: secretKey")
 	}
-	if ali.options.NamespaceId == "" {
-		return errors.New("缺少必要参数: NamespaceId")
-	}
+
+	return nil
+}
+
+func (ali *aliACM) configure() error {
+	access := ali.options.Others[accessKey]
+	secret := ali.options.Others[secretKey]
 
 	// access和secret 在设置的时候就指定了类型为string
 	ali.clientConfig = constant.ClientConfig{
 		AccessKey:   access.(string),
 		SecretKey:   secret.(string),
 		TimeoutMs:   5 * 1000,
-		NamespaceId: ali.options.NamespaceId,
+		NamespaceId: ali.options.Namespace,
 		Endpoint:    fmt.Sprintf("%s:%d", ali.options.Host, ali.options.Port),
-	}
-	if ali.options.CacheDir != "" {
-		ali.clientConfig.CacheDir = ali.options.CacheDir
-	}
-	if ali.options.LogDir != "" {
-		ali.clientConfig.LogDir = ali.options.LogDir
 	}
 
 	client, err := clients.CreateConfigClient(map[string]interface{}{
@@ -61,30 +63,29 @@ func (ali *aliACM) Init() error {
 	return nil
 }
 
-func (ali *aliACM) GetConfig() (string, error) {
+func (ali *aliACM) GetConfig(param vo.ConfigParam) (string, error) {
 	// 获取配置
-	content, err := ali.client.GetConfig(vo.ConfigParam{
-		DataId: "beaver.yaml",
-		Group:  "DEFAULT_GROUP"})
-	if err != nil {
-		return "", err
-	}
-
-	return content, nil
+	return ali.client.GetConfig(param)
 }
 
-func NewACM(opts ...acm.Option) acm.ACM {
+func (ali *aliACM) Listen(param vo.ConfigParam) error {
+	return ali.client.ListenConfig(param)
+}
+
+func NewACM(opts acm.Options) (acm.ACM, error) {
 	var ali aliACM
 
 	// 设置默认值
 	ali.validate = validator.New()
-	ali.options.Host = "127.0.0.1"
-	ali.options.Port = 8848
-	ali.options.Others = make(map[string]interface{})
+	ali.options = opts
 
-	for _, o := range opts {
-		o(&ali.options)
+	if err := ali.Validate(); err != nil {
+		return nil, errors.Wrap(err, "参数验证失败")
 	}
 
-	return &ali
+	if err := ali.configure(); err != nil {
+		return nil, errors.Wrap(err, "ACM初始化失败")
+	}
+
+	return &ali, nil
 }
