@@ -9,8 +9,6 @@ type ACM interface {
 	Listen(vo.ConfigParam) error
 }
 
-type ListenFunc func(namespace, group, dataId, data string)
-
 // 公共的配置参数
 type Options struct {
 	Host      string `validate:"required"`
