@@ -10,25 +10,25 @@ type Options struct {
 
 type Option func(*Options)
 
-func Host(ipAddr string) Option {
+func WithHost(ipAddr string) Option {
 	return func(options *Options) {
 		options.IpAddr = ipAddr
 	}
 }
 
-func Port(post uint64) Option {
+func WithPort(post uint64) Option {
 	return func(options *Options) {
 		options.Port = post
 	}
 }
 
-func TimeoutMs(time uint64) Option {
+func WithTimeoutMs(time uint64) Option {
 	return func(options *Options) {
 		options.TimeoutMs = time
 	}
 }
 
-func NamespaceId(nsId string) Option {
+func WithNamespaceId(nsId string) Option {
 	return func(options *Options) {
 		options.NamespaceId = nsId
 	}

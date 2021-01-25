@@ -3,11 +3,12 @@ package acm
 var DefaultACM = NewACM()
 
 type ACM interface {
+	Init() error
 	GetConfig() (string, error)
 }
 
 func NewACM(opts ...Option) ACM {
-	return newRegistry(opts...)
+	return newACM(opts...)
 }
 
 func GetConfig() (string, error) {
